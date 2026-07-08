@@ -8,6 +8,9 @@ enum Scene
     RESULT
 };
 
+int LoadGraphWithCheck(const char* file);
+int LoadSoundMemWithCheck(const char* file);
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
     ChangeWindowMode(TRUE);
@@ -18,6 +21,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     SetDrawScreen(DX_SCREEN_BACK);
 
+    // 画像読み込み
+    int bgImg = LoadGraphWithCheck("undoukai_tokyousou_white.png");
+    int fieldImg = LoadGraphWithCheck("rikujou_sandantobi.png");
+    int runImg = LoadGraphWithCheck("undoukai_tokyousou_white.png");
+    int jumpImg = LoadGraphWithCheck("rikujou_sandantobi.png");
+
     Scene scene = TITLE;
 
     // プレイヤー
@@ -27,6 +36,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // パワー
     int power = 0;
+
+    // サウンドの読み込みと音量設定
+    int se = LoadSoundMem("AS_40475_【チャイム＿学校02-02】.mp3");
+    int se2 = LoadSoundMem("AS_53089_警官のホイッスルを2回吹く.mp3");
 
     // ジャンプ
     float jumpX = 0;
@@ -41,27 +54,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     float record = 0.0f;
 
     // キー入力（前フレーム）
+    char prevUp = 0;
     char prevSpace = 0;
-    char prevZ = 0;
     char prevEnter = 0;
 
     while (ProcessMessage() == 0 && CheckHitKey(KEY_INPUT_ESCAPE) == 0)
     {
         ClearDrawScreen();
 
+        DrawGraph(0, 0, bgImg, TRUE);
+        DrawGraph(10, 10, fieldImg, TRUE);
+
         // 現在キー
         char nowSpace = CheckHitKey(KEY_INPUT_SPACE);
-        char nowZ = CheckHitKey(KEY_INPUT_Z);
+        char nowUp = CheckHitKey(KEY_INPUT_UP);
         char nowEnter = CheckHitKey(KEY_INPUT_RETURN);
 
         switch (scene)
         {
         case TITLE:
 
-            DrawString(500, 200, "HASIRITAKATOBI", GetColor(255, 255, 255));
-            DrawString(475, 300, "PRESS SPACE TO START", GetColor(255, 255, 0));
+            DrawString(500, 200, "HASIRIHABATOBI", GetColor(255, 255, 255));
+            DrawString(488, 300, "PRESS UP TO START", GetColor(255, 255, 0));
 
-            if (nowSpace && !prevSpace)
+            if (nowUp && !prevUp)
             {
                 scene = RUN;
                 playerX = 100;
@@ -76,8 +92,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // 自動走行
             playerX += speed;
 
-            // Z連打（押した瞬間だけ）
-            if (nowZ && !prevZ)
+            // Shift連打（押した瞬間だけ）
+            if (nowUp && !prevUp)
             {
                 power++;
             }
@@ -87,16 +103,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             DrawLine((int)lineX, 450, (int)lineX, 550, GetColor(255, 0, 0));
 
             // プレイヤー
-            DrawBox(
-                (int)playerX, (int)playerY,
-                (int)playerX + 40, (int)playerY + 50,
-                GetColor(0, 255, 255),
+            DrawExtendGraph(
+                (int)playerX,
+                (int)playerY,
+                (int)playerX + 50,
+                (int)playerY + 60,
+                runImg,
                 TRUE);
 
             DrawFormatString(30, 30, GetColor(255, 255, 255),
                 "Power: %d", power);
 
             DrawString(30, 60, "PRESS SPACE TO JUMP", GetColor(255, 255, 0));
+            DrawString(30, 10, "PRESS UP to PowerCharge", GetColor(255, 255, 0));;
+            DrawString(893, 425, "↓Don't over here!", GetColor(255, 255, 0));
 
             // ジャンプ（押した瞬間）
             if (nowSpace && !prevSpace)
@@ -143,10 +163,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             DrawLine(0, 550, 1280, 550, GetColor(255, 255, 255));
             DrawLine((int)lineX, 450, (int)lineX, 550, GetColor(255, 0, 0));
 
-            DrawBox(
-                (int)jumpX, (int)jumpY,
-                (int)jumpX + 40, (int)jumpY + 50,
-                GetColor(0, 255, 255),
+            DrawExtendGraph(
+                (int)jumpX,
+                (int)jumpY,
+                (int)jumpX + 50,
+                (int)jumpY + 60,
+                jumpImg,
                 TRUE);
 
             break;
@@ -158,12 +180,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             if (foul)
             {
                 DrawString(520, 300, "FOUL!", GetColor(255, 0, 0));
+                PlaySoundMem(se2, DX_PLAYTYPE_BACK);
             }
             else
             {
                 DrawFormatString(480, 300,
                     GetColor(255, 255, 255),
                     "Record: %.2f m", record);
+                PlaySoundMem(se, DX_PLAYTYPE_BACK);
             }
 
             DrawString(435, 450,
@@ -183,8 +207,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         }
 
         // 前フレーム更新
+        prevUp = nowUp;
         prevSpace = nowSpace;
-        prevZ = nowZ;
         prevEnter = nowEnter;
 
         ScreenFlip();
@@ -192,4 +216,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     DxLib_End();
     return 0;
+}
+
+int LoadGraphWithCheck(const char* file)
+{
+    int res = LoadGraph(file);
+    if (res == -1)
+    {
+        MessageBox(GetMainWindowHandle(), file, "画像読み込みに失敗", MB_OK | MB_ICONSTOP);
+    }
+    return res;
+}
+
+// 音声の読み込み、読み込み失敗時は通知
+int LoadSoundMemWithCheck(const char* file)
+{
+    int res = LoadSoundMem(file);
+    if (res == -1)
+    {
+        MessageBox(GetMainWindowHandle(), file, "音声読み込みに失敗", MB_OK | MB_ICONSTOP);
+    }
+    return res;
 }
