@@ -8,6 +8,13 @@ enum Scene
     RESULT
 };
 
+struct SandParticle
+{
+    float x, y;
+    float vx, vy;
+    bool active;
+};
+
 int LoadGraphWithCheck(const char* file);
 int LoadSoundMemWithCheck(const char* file);
 
@@ -22,12 +29,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     SetDrawScreen(DX_SCREEN_BACK);
 
     // 画像読み込み
-    int bgImg = LoadGraphWithCheck("undoukai_tokyousou_white.png");
-    int fieldImg = LoadGraphWithCheck("rikujou_sandantobi.png");
-    int runImg = LoadGraphWithCheck("undoukai_tokyousou_white.png");
-    int jumpImg = LoadGraphWithCheck("rikujou_sandantobi.png");
+    //int bgImg = LoadGraphWithCheck("undoukai_tokyousou_white.png");
+    //int fieldImg = LoadGraphWithCheck("rikujou_sandantobi.png");
+    int runImg = LoadGraphWithCheck("走り幅跳び　走る.png");
+    int jumpImg = LoadGraphWithCheck("走り幅跳び　飛ぶ.png");
+    int schoolImg = LoadGraphWithCheck("学校背景,png");
 
     Scene scene = TITLE;
+
+    const int MAX_SAND = 200;
+    SandParticle sand[MAX_SAND];
+
+    for (int i = 0; i < MAX_SAND; i++)
+    {
+        sand[i].active = false;
+    }
 
     // プレイヤー
     float playerX = 100;
@@ -61,9 +77,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     while (ProcessMessage() == 0 && CheckHitKey(KEY_INPUT_ESCAPE) == 0)
     {
         ClearDrawScreen();
+        for (int i = 0; i < MAX_SAND; i++)
+        {
+            if (!sand[i].active)
+                continue;
 
-        DrawGraph(0, 0, bgImg, TRUE);
-        DrawGraph(10, 10, fieldImg, TRUE);
+            sand[i].x += sand[i].vx;
+            sand[i].y += sand[i].vy;
+
+            sand[i].vy += 0.2f;
+
+            if (sand[i].y > 550)
+                sand[i].active = false;
+        }
+
+        //DrawGraph(0, 0, bgImg, TRUE);
+        //DrawGraph(10, 10, fieldImg, TRUE);
+        DrawGraph(0, 0, schoolImg, FALSE);
 
         // 現在キー
         char nowSpace = CheckHitKey(KEY_INPUT_SPACE);
@@ -145,6 +175,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             if (jumpY >= 500)
             {
                 jumpY = 500;
+                int sandAmount = 20 + (int)(record * 15);
+
+                if (sandAmount > MAX_SAND)
+                    sandAmount = MAX_SAND;
+
+                for (int i = 0; i < sandAmount; i++)
+                {
+                    sand[i].active = true;
+
+                    sand[i].x = jumpX;
+                    sand[i].y = 550;
+
+                    sand[i].vx = (GetRand(100) - 50) / 10.0f;
+                    sand[i].vy = -(GetRand(60) / 10.0f);
+                }
 
                 if (foul)
                 {
@@ -204,6 +249,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             }
 
             break;
+        }
+
+        for (int i = 0; i < MAX_SAND; i++)
+        {
+            if (!sand[i].active)
+                continue;
+
+            DrawCircle(
+                (int)sand[i].x,
+                (int)sand[i].y,
+                2,
+                GetColor(220, 200, 120),
+                TRUE);
         }
 
         // 前フレーム更新
