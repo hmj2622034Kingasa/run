@@ -33,7 +33,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     //int fieldImg = LoadGraphWithCheck("rikujou_sandantobi.png");
     int runImg = LoadGraphWithCheck("‘–‚è•’µ‚Ñ@‘–‚é.png");
     int jumpImg = LoadGraphWithCheck("‘–‚è•’µ‚Ñ@”ò‚Ô.png");
-    int schoolImg = LoadGraphWithCheck("ŠwZ”wŒi,png");
+    int schoolImg = LoadGraphWithCheck("ŠwZ”wŒi.jpg");
 
     Scene scene = TITLE;
 
@@ -93,7 +93,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
         //DrawGraph(0, 0, bgImg, TRUE);
         //DrawGraph(10, 10, fieldImg, TRUE);
-        DrawGraph(0, 0, schoolImg, FALSE);
+        DrawExtendGraph(
+            0, 0,
+            1280, 720,
+            schoolImg,
+            TRUE
+        );
 
         // Œ»ÝƒL[
         char nowSpace = CheckHitKey(KEY_INPUT_SPACE);
@@ -130,7 +135,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
             // ’n–ÊE“¥Ø
             DrawLine(0, 550, 1280, 550, GetColor(255, 255, 255));
-            DrawLine((int)lineX, 450, (int)lineX, 550, GetColor(255, 0, 0));
+            DrawLine((int)lineX, 450, (int)lineX, 550, GetColor(0, 0, 0));
 
             // ƒvƒŒƒCƒ„[
             DrawExtendGraph(
@@ -146,7 +151,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
             DrawString(30, 60, "PRESS SPACE TO JUMP", GetColor(255, 255, 0));
             DrawString(30, 10, "PRESS UP to PowerCharge", GetColor(255, 255, 0));;
-            DrawString(893, 425, "«Don't over here!", GetColor(255, 255, 0));
+            DrawString(893, 425, "«Don't over here!", GetColor(255, 0, 0));
 
             // ƒWƒƒƒ“ƒvi‰Ÿ‚µ‚½uŠÔj
             if (nowSpace && !prevSpace)
@@ -159,7 +164,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
                 vx = power * 0.25f;
                 vy = -12.0f;
 
-                foul = (playerX > lineX);
+                foul = (playerX + 25 > lineX);
             }
 
             break;
@@ -230,7 +235,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             else
             {
                 DrawFormatString(480, 300,
-                    GetColor(255, 255, 255),
+                    GetColor(0, 0, 255),
                     "Record: %.2f m", record);
                 PlaySoundMem(se, DX_PLAYTYPE_BACK);
             }
