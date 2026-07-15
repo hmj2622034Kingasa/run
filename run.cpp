@@ -12,6 +12,7 @@ struct SandParticle
 {
     float x, y;
     float vx, vy;
+    int size;
     bool active;
 };
 
@@ -37,7 +38,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     Scene scene = TITLE;
 
-    const int MAX_SAND = 200;
+    const int MAX_SAND = 1200;
     SandParticle sand[MAX_SAND];
 
     for (int i = 0; i < MAX_SAND; i++)
@@ -47,7 +48,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // プレイヤー
     float playerX = 100;
-    float playerY = 500;
+    float playerY = 490;
     float speed = 3.0f;
 
     // パワー
@@ -85,7 +86,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             sand[i].x += sand[i].vx;
             sand[i].y += sand[i].vy;
 
-            sand[i].vy += 0.2f;
+            sand[i].vy += 0.03f;
+            sand[i].vx += 0.10f;
 
             if (sand[i].y > 550)
                 sand[i].active = false;
@@ -109,14 +111,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         {
         case TITLE:
 
-            DrawString(500, 200, "HASIRIHABATOBI", GetColor(255, 255, 255));
-            DrawString(488, 300, "PRESS UP TO START", GetColor(255, 255, 0));
+            DrawString(580, 195, "Run to Jump", GetColor(0, 255, 255));
+            DrawString(550, 300, "PRESS UP TO START", GetColor(255, 205, 0));
 
             if (nowUp && !prevUp)
             {
+                StopSoundMem(se);
+                StopSoundMem(se2);
+
                 scene = RUN;
                 playerX = 100;
                 power = 0;
+                record = 0.0f;
                 foul = false;
             }
 
@@ -177,33 +183,53 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             vy += gravity;
 
             // 地面着地
-            if (jumpY >= 500)
+            if (jumpY >= 490)
             {
-                jumpY = 500;
-                int sandAmount = 20 + (int)(record * 15);
+                jumpY = 490;
 
-                if (sandAmount > MAX_SAND)
-                    sandAmount = MAX_SAND;
-
-                for (int i = 0; i < sandAmount; i++)
-                {
-                    sand[i].active = true;
-
-                    sand[i].x = jumpX;
-                    sand[i].y = 550;
-
-                    sand[i].vx = (GetRand(100) - 50) / 10.0f;
-                    sand[i].vy = -(GetRand(60) / 10.0f);
-                }
-
+                // 先に記録を計算
                 if (foul)
                 {
-                    record = 0;
+                    record = 0.0f;
+                    PlaySoundMem(se2, DX_PLAYTYPE_BACK);
                 }
                 else
                 {
                     record = (jumpX - lineX) / 50.0f;
-                    if (record < 0) record = 0;
+
+                    if (record < 0.0f)
+                    {
+                        record = 0.0f;
+                    }
+
+                    PlaySoundMem(se, DX_PLAYTYPE_BACK);
+                }
+
+                // 記録に応じて砂の量を増やす
+                int sandAmount = 250 + (int)(record * 40.0f);
+
+                if (sandAmount > MAX_SAND)
+                {
+                    sandAmount = MAX_SAND;
+                }
+
+                // 砂を発生
+                for (int i = 0; i < sandAmount; i++)
+                {
+                    sand[i].active = true;
+
+                    // 足元周辺からランダムに発生
+                    sand[i].x = jumpX + 45 + GetRand(40) - 40;
+                    sand[i].y = 545 + GetRand(10);
+
+                    // 左右に強く飛ばす
+                    sand[i].vx = (GetRand(360) - 270) / 10.0f;
+
+                    // 上方向へ飛ばす
+                    sand[i].vy = -(GetRand(177) + 0) / 10.0f;
+
+                    // 砂粒の大きさ
+                    sand[i].size = GetRand(4.5) + 1;
                 }
 
                 scene = RESULT;
@@ -214,9 +240,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             DrawLine((int)lineX, 450, (int)lineX, 550, GetColor(255, 0, 0));
 
             DrawExtendGraph(
-                (int)jumpX,
-                (int)jumpY,
                 (int)jumpX + 50,
+                (int)jumpY,
+                (int)jumpX,
                 (int)jumpY + 60,
                 jumpImg,
                 TRUE);
@@ -225,22 +251,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
         case RESULT:
 
-            DrawString(520, 200, "RESULT", GetColor(255, 255, 0));
+            DrawString(605, 200, "RESULT", GetColor(255, 205, 0));
 
             if (foul)
             {
-                DrawString(520, 300, "FOUL!", GetColor(255, 0, 0));
-                PlaySoundMem(se2, DX_PLAYTYPE_BACK);
+                DrawString(605, 300, "FOUL!", GetColor(255, 0, 0));
             }
             else
             {
-                DrawFormatString(480, 300,
+                DrawFormatString(570, 300,
                     GetColor(0, 0, 255),
                     "Record: %.2f m", record);
-                PlaySoundMem(se, DX_PLAYTYPE_BACK);
             }
 
-            DrawString(435, 450,
+            DrawString(515, 470,
                 "PRESS ENTER TO RETURN TITLE",
                 GetColor(255, 255, 255));
 
@@ -264,7 +288,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             DrawCircle(
                 (int)sand[i].x,
                 (int)sand[i].y,
-                2,
+                sand[i].size,
                 GetColor(220, 200, 120),
                 TRUE);
         }
